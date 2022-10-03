@@ -1,0 +1,23 @@
+name: multilayer_simulator
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - black
+  - jupyter
+  - jupyterlab
+  - jedi>=0.17.2 # Enable tab completion
+  - ipykernel
+  - flake8
+  - numpy
+  - scipy
+  # - attrs>=21.3.0
+  - matplotlib
+  # - pandas
+  - xarray
+  - holoviews
+  - seaborn
+  - pytest
+  - pip
+  - pip:
