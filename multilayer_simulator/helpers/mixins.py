@@ -1,4 +1,5 @@
 from functools import cached_property
+from typing import ClassVar
 import numpy as np
 from numpy.typing import ArrayLike
 from attrs import mutable, field, converters, setters
@@ -33,7 +34,7 @@ class SpectrumMixinV0_1:
     FIXME: However, it doesn't work because an infinite loop is created.
     """
     
-    c: float = c
+    c: ClassVar[float] = c
     frequencies: ArrayLike = field(default=None, kw_only=True, converter=converters.optional(np.atleast_1d), on_setattr=[setters.convert, set_wavelengths])
     wavelengths: ArrayLike = field(default=None, kw_only=True, converter=converters.optional(np.atleast_1d), on_setattr=[setters.convert, set_frequencies])
 
