@@ -1,7 +1,11 @@
 
 
 from abc import ABC, abstractmethod
+import numpy as np
+from numpy.typing import NDArray
+from attrs import mutable, field
 
+from material import Material
 
 class Structure(ABC):
     """
@@ -9,21 +13,28 @@ class Structure(ABC):
     """
     
     @abstractmethod
-    def n(self, frequencies: NDArray[np.float64]):
+    def index(self, frequencies: NDArray[np.float64], component: Literal[1, 2, 3] = 1):
         pass
     
     @abstractmethod
-    def d(self)
+    def thickness(self):
         pass
-    
-class Multilayer(Structure):
-    """
-    Represent a multilayer.
-    """
-    pass
 
+@mutable
 class Layer(Structure):
     """
     Represent a single layer.
+    """
+    
+    
+    @classmethod
+    def from_material(cls, material: Material, thickness: float):
+        
+        
+
+
+class Multilayer(Structure):
+    """
+    Represent a multilayer.
     """
     pass
