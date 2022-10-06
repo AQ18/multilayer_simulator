@@ -13,11 +13,11 @@ class Structure(ABC):
     """
     
     @abstractmethod
-    def index(self, frequencies: NDArray[np.float64], component: Literal[1, 2, 3] = 1):
+    def index(self, frequencies: NDArray[np.float_], component: Literal[1, 2, 3] = 1) -> NDArray[np.float_]:
         pass
     
     @abstractmethod
-    def thickness(self):
+    def thickness(self) -> NDArray[np.float_]:
         pass
 
 @mutable
