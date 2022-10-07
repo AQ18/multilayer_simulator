@@ -24,7 +24,7 @@ class Simulation(SpectrumMixinV0_2):
     structure: Structure = field(default=None)
     engine: Engine = field(default=None)
     angles: ArrayLike = field(
-        factory=lambda: [0], converter=np.atleast_1d, on_setattr=setters.convert
+        factory=lambda: [0], kw_only=True, converter=np.atleast_1d, on_setattr=setters.convert
     )
     data = field(init=False)
 
