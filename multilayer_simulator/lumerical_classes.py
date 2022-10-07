@@ -4,9 +4,9 @@ from numpy.typing import NDArray
 from attrs import frozen, field, Factory
 import lumapi
 
-from engine import Engine
+from multilayer_simulator.engine import Engine
 from helpers.helpers import filter_mapping
-from structure import Structure
+from multilayer_simulator.structure import Structure
 
 
 @frozen

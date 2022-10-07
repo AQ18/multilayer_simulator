@@ -1,12 +1,12 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Literal
+from typing import Callable, Literal
 import numpy as np
 from numpy.typing import NDArray
-from attrs import mutable, field
+from attrs import mutable, frozen, field
 
-from material import Material
+from multilayer_simulator.material import Material
 
 class Structure(ABC):
     """
@@ -22,12 +22,13 @@ class Structure(ABC):
     def thickness(self) -> NDArray[np.float_]:
         pass
 
-@mutable
+@frozen
 class Layer(Structure):
     """
     Represent a single layer.
     """
-    
+    index: Callable
+    thickness: float
     
     @classmethod
     def from_material(cls, material: Material, thickness: float):
