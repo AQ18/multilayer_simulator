@@ -1,6 +1,7 @@
 
 
 from abc import ABC, abstractmethod
+from typing import Literal
 import numpy as np
 from numpy.typing import NDArray
 from attrs import mutable, field
@@ -16,6 +17,7 @@ class Structure(ABC):
     def index(self, frequencies: NDArray[np.float_], component: Literal[1, 2, 3] = 1) -> NDArray[np.float_]:
         pass
     
+    @property
     @abstractmethod
     def thickness(self) -> NDArray[np.float_]:
         pass
@@ -29,7 +31,7 @@ class Layer(Structure):
     
     @classmethod
     def from_material(cls, material: Material, thickness: float):
-        
+        pass
         
 
 
