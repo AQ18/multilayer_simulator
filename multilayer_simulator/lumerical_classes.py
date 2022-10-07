@@ -155,12 +155,6 @@ class STACKFIELD(Engine):
 
 @frozen
 class LumericalSTACK(Engine):
-    _kwargs_substitutions: ClassVar[Mapping[str, str]] = {
-        "field_resolution": "resolution",
-        "field_min": "min",
-        "field_max": "max",
-    }
-
     session: lumapi.FDTD
     stackrt: STACKRT = Factory(lambda self: STACKRT(self.session), takes_self=True)
     stackfield: STACKFIELD = Factory(
