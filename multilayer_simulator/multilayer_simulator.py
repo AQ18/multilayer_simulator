@@ -4,11 +4,6 @@
     
 
 
-class DataFormatter:
-    """
-    Format the output from a given engine in some consistent way.
-    """
-
 class Visualisation:
     """
     Visualise a Simulation output.
