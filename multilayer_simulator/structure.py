@@ -22,17 +22,21 @@ class Structure(ABC):
     def thickness(self) -> NDArray[np.float_]:
         pass
 
-@frozen
+@mutable # Has to be mutable to allow binding of index function without hacks
 class Layer(Structure):
     """
     Represent a single layer.
     """
-    index: Callable
+    index: Callable[[Structure, NDArray[np.float_], Literal[1, 2, 3], NDArray[np.float_]]] # TODO: Type this as callback protocol instead
     thickness: float
+    
+    def __attrs_post_init__(self):
+        self.index = self.index.__get__(self) # bind index function as instance method
     
     @classmethod
     def from_material(cls, material: Material, thickness: float):
-        pass
+        index = material.index
+        return cls(index, thickness)
         
 
 
