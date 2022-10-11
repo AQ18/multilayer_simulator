@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 from attrs import mutable
+import numpy as np
 from numpy.typing import NDArray
 
 
