@@ -1,4 +1,6 @@
-from typing import Literal
+from typing import Literal, Optional
+from attrs import mutable
+from numpy.typing import NDArray
 
 
 
@@ -8,7 +10,7 @@ class Material:
     Represent a material.
     """
     
-    def index(self, f: float, component: Literal[1, 2, 3] = 1):
+    def index(self, frequencies: NDArray[np.float_], component: Literal[1, 2, 3] = 1) -> NDArray[np.float_]:
         """
         Return the complex refractive index at frequency f, which may be a float or an array of floats.
         
@@ -26,4 +28,10 @@ class LumericalOscillator(LumericalMaterial):
     """
     Represent and control a Lorentz Oscillator type material in the Lumerical materials database.
     """
+
+@mutable
+class SingleIndex(Material):
+    _index: float = 1
     
+    def index(self, frequencies: Optional[NDArray[np.float_]] = None, component: Literal[1, 2, 3] = 1) -> NDArray[np.float_]:
+        return self._index
