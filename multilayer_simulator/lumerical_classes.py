@@ -190,3 +190,16 @@ class LumericalSTACK(Engine):
         )
 
         return rt_data, field_data
+
+
+    
+class LumericalMaterial(Material):
+    """
+    Represent and control a material in the Lumerical materials database.
+    """
+    
+    
+class LumericalOscillator(LumericalMaterial):
+    """
+    Represent and control a Lorentz Oscillator type material in the Lumerical materials database.
+    """
