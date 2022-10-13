@@ -2,9 +2,9 @@ import numpy as np
 from numpy.typing import ArrayLike
 from attrs import mutable, field, setters
 
-from engine import Engine
-from helpers.mixins import SpectrumMixinV0_2
-from structure import Structure
+from multilayer_simulator.engine import Engine
+from multilayer_simulator.helpers.mixins import SpectrumMixinV0_2
+from multilayer_simulator.structure import Structure
 
 
 def simulate(structure, engine, frequencies, angles, **kwargs):
@@ -34,7 +34,7 @@ class Simulation(SpectrumMixinV0_2):
         engine=None,
         frequencies=None,
         angles=None,
-        save_data=True,
+        keep_data=True,
         **kwargs
     ):
         if structure is None:
@@ -47,7 +47,7 @@ class Simulation(SpectrumMixinV0_2):
             angles = self.angles
         data = simulate(structure, engine, frequencies, angles, **kwargs)
 
-        if save_data is True:
+        if keep_data is True:
             self.data = data
 
         return data
