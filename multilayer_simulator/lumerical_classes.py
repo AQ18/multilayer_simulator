@@ -559,8 +559,8 @@ class format_stackfield(LumericalFormatter):
 
 @mutable
 class format_STACK(DataFormatter):
-    stackrt_dataset = dict[str, Any]
-    stackfield_dataset = dict[str, Any]
+    stackrt_dataset: dict[str, Any]
+    stackfield_dataset: dict[str, Any]
     stackrt_formatter: Callable = field()
     stackfield_formatter: Callable = field()
     format: DataFormatter.OutputFormats = None
@@ -585,7 +585,7 @@ class format_STACK(DataFormatter):
         STACK_output: STACKOutput,
         stackrt_formatter: Callable = _stackrt_formatter_default(),
         stackfield_formatter: Callable = _stackfield_formatter_default(),
-        format: OutputFormats = None,
+        format: DataFormatter.OutputFormats = None,
     ) -> "format_STACK":
         stackrt_dataset = STACK_output[0]
         stackfield_dataset = STACK_output[1]
