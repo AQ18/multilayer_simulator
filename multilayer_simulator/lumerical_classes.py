@@ -157,6 +157,9 @@ class STACKFIELD(Engine):
         return data
 
 
+STACKOutput = tuple[dict[str, Any], dict[str, Any]]
+
+
 @frozen
 class LumericalSTACK(Engine):
     session: lumapi.FDTD
@@ -171,7 +174,7 @@ class LumericalSTACK(Engine):
         frequencies: NDArray[np.float_],
         angles: NDArray[np.float_],
         **kwargs
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
+    ) -> STACKOutput:
         """
         Simulate the propagation of light through the structure in one dimension using Lumerical's STACK solver.
         Returns the output of STACKRT.simulate() and STACKFIELD.simulate() in a tuple.
@@ -468,7 +471,7 @@ class LumericalFormatter(DataFormatter):
         dims,
         non_dims,
         variables,
-        vector: Literal[None, 'rectilinear'] = None,
+        vector: Literal[None, "rectilinear"] = None,
     ) -> xr.Dataset:
         dim_coords = {
             dim: lumerical_dataset[dim].reshape(-1) for dim in dims
@@ -486,10 +489,10 @@ class LumericalFormatter(DataFormatter):
         dataset = xr.Dataset(data_vars=data_vars, coords=coords)
 
         return dataset
-    
+
     def to_xarray_dataset(self) -> xr.Dataset:
         raise NotImplementedError
-    
+
     def to_xarray_dataarray(
         self, dim: Optional[Hashable] = None, name: Optional[Hashable] = None
     ) -> xr.DataArray:
@@ -505,7 +508,9 @@ class LumericalFormatter(DataFormatter):
         """
         dataset = self.to_xarray_dataset()
         params = {"dim": dim, "name": name}
-        non_default_params = {k: v for k, v in params.items() if v is not None}
+        non_default_params = {
+            k: v for k, v in params.items() if v is not None
+        }  # only pass params if not None
         dataarray = dataset.to_array(**non_default_params)
         return dataarray
 
@@ -535,43 +540,95 @@ class format_stackrt(LumericalFormatter):
 @mutable
 class format_stackfield(LumericalFormatter):
     lumerical_dataset: dict[str, Any]
-    dims: Iterable[str] = Factory(lambda: ['x', 'y', 'z', 'frequency', 'theta'])
+    dims: Iterable[str] = Factory(lambda: ["x", "y", "z", "frequency", "theta"])
     non_dims: Mapping[str, str] = Factory(lambda: {"lambda": "frequency"})
-    variables: Iterable[str] = Factory(
-        lambda: ['Es', 'Hs', 'Ep', 'Hp']
-    )
+    variables: Iterable[str] = Factory(lambda: ["Es", "Hs", "Ep", "Hp"])
     relabeling: Mapping[str, str] = Factory(lambda: {"lambda": "wavelength"})
-    
+
     def to_xarray_dataset(self) -> xr.Dataset:
         dataset = self.lumerical_to_xarray(
             lumerical_dataset=self.lumerical_dataset,
             dims=self.dims,
             non_dims=self.non_dims,
             variables=self.variables,
-            vector='rectilinear',
+            vector="rectilinear",
         )
         dataset = dataset.rename(name_dict=self.relabeling)
         return dataset
 
 
 @mutable
-class format_STACK:
-    # probably this should be split into two attributes and a factory method defined
-    STACK_output: tuple[dict[str, Any], dict[str, Any]] # TODO: define this type externally and reuse in LumericalSTACK output
-    stackrt_formatter: Callable = field(default=format_stackrt) # TODO: maybe this should be LumericalFormatter type
-    stackfield_formatter: Callable = field(default=format_stackfield) # TODO: maybe this should be LumericalFormatter type
-    format: Literal[None, 'xarray_dataset', 'xarray_dataarray'] = None # TODO: define 'OutputFormats' type
-    
-    def to_xarray_dataset(self,
-                          stackrt_args: Optional[Mapping] = None,
-                          stackfield_args: Optional[Mapping] = None
-                          ) -> tuple[xr.Dataset, xr.Dataset]:
+class format_STACK(DataFormatter):
+    stackrt_dataset = dict[str, Any]
+    stackfield_dataset = dict[str, Any]
+    stackrt_formatter: Callable = field()
+    stackfield_formatter: Callable = field()
+    format: DataFormatter.OutputFormats = None
+
+    @stackrt_formatter.default
+    def _stackrt_formatter_default(self=None):
+        return format_stackrt
+
+    @stackfield_formatter.default
+    def _stackfield_formatter_default(self=None):
+        return format_stackfield
+
+    def __attrs_post_init__(self):  #
+        if self.format == "xarray_dataset":
+            return self.to_xarray_dataset()
+        if self.format == "xarray_dataarray":
+            return self.to_xarray_dataarray()
+
+    @classmethod
+    def from_tuple(
+        cls,
+        STACK_output: STACKOutput,
+        stackrt_formatter: Callable = _stackrt_formatter_default(),
+        stackfield_formatter: Callable = _stackfield_formatter_default(),
+        format: OutputFormats = None,
+    ) -> "format_STACK":
+        stackrt_dataset = STACK_output[0]
+        stackfield_dataset = STACK_output[1]
+        return cls(
+            stackrt_dataset=stackrt_dataset,
+            stackfield_dataset=stackfield_dataset,
+            stackrt_formatter=stackrt_formatter,
+            stackfield_formatter=stackfield_formatter,
+            format=format,
+        )
+
+    def to_xarray_dataset(
+        self,
+        stackrt_args: Optional[Mapping] = None,
+        stackfield_args: Optional[Mapping] = None,
+    ) -> tuple[xr.Dataset, xr.Dataset]:
         if stackrt_args is None:
             stackrt_args = {}
         if stackfield_args is None:
             stackfield_args = {}
-        
-        stackrt_data, stackfield_data = self.STACK_output
-        stackrt_dataset = self.stackrt_formatter(stackrt_data, **stackrt_args)
-        stackfield_dataset = self.stackfield_formatter(stackfield_data, **stackfield_args)
+
+        stackrt_dataset = self.stackrt_formatter(
+            self.stackrt_dataset, **stackrt_args
+        ).to_xarray_dataset()
+        stackfield_dataset = self.stackfield_formatter(
+            self.stackfield_dataset, **stackfield_args
+        ).to_xarray_dataset()
         return stackrt_dataset, stackfield_dataset
+
+    def to_xarray_dataarray(
+        self,
+        stackrt_args: Optional[Mapping] = None,
+        stackfield_args: Optional[Mapping] = None,
+    ) -> tuple[xr.DataArray, xr.DataArray]:
+        if stackrt_args is None:
+            stackrt_args = {}
+        if stackfield_args is None:
+            stackfield_args = {}
+
+        stackrt_dataarray = self.stackrt_formatter(
+            self.stackrt_dataset, **stackrt_args
+        ).to_xarray_dataarray()
+        stackfield_dataarray = self.stackfield_formatter(
+            self.stackfield_dataset, **stackfield_args
+        ).to_xarray_dataarray()
+        return stackrt_dataarray, stackfield_dataarray
