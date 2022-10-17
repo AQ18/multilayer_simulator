@@ -4,20 +4,24 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
-  - black
+# Essential
+  - numpy
+  - attrs>=21.3.0
+# Interactive
   - jupyter
   - jupyterlab
   - jedi>=0.17.2 # Enable tab completion
   - ipykernel
+# Code formatting
+  - black
   - flake8
-  - numpy
-  - scipy
-  # - attrs>=21.3.0
-  - matplotlib
+# Data formats
   # - pandas
   - xarray
+# Plotting
+  - matplotlib
   - holoviews
-  - seaborn
+# Testing
   - pytest
   - pip
   - pip:
