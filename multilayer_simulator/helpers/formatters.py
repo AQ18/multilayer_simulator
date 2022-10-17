@@ -1,4 +1,4 @@
-
+from typing import Literal
 
 class DataFormatter:
     """
