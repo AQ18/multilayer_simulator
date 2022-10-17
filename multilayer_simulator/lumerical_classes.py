@@ -1,10 +1,13 @@
-from typing import ClassVar, Dict, Iterable, Literal, Mapping, Optional
+from typing import Any, Callable, ClassVar, Hashable, Literal, Mapping, Optional
+from collections.abc import Iterable
 import numpy as np
 from numpy.typing import NDArray
 from attrs import mutable, frozen, field, Factory
 import lumapi
+import xarray as xr
 
 from multilayer_simulator.engine import Engine
+from multilayer_simulator.helpers.formatters import DataFormatter
 from multilayer_simulator.helpers.helpers import filter_mapping, relabel_mapping
 from multilayer_simulator.structure import Structure
 from multilayer_simulator.material import Material
@@ -20,7 +23,7 @@ class STACKRT(Engine):
         thickness: NDArray[np.float_],
         frequencies: NDArray[np.float_],
         angles: NDArray[np.float_],
-    ) -> Dict[str, NDArray[np.float_]]:
+    ) -> dict[str, Any]:
         """
         Thin wrapper around lumapi.FDTD.stackrt.
 
@@ -33,7 +36,7 @@ class STACKRT(Engine):
         :param angles: _description_
         :type angles: NDArray[np.float_]
         :return: _description_
-        :rtype: Dict[str, NDArray[np.float_]]
+        :rtype: dict[str, NDArray[np.float_]]
         """
         n = index
         d = thickness
@@ -83,7 +86,7 @@ class STACKFIELD(Engine):
         resolution: Optional[int] = None,
         min: Optional[float] = None,
         max: Optional[float] = None,
-    ) -> Dict[str, NDArray[np.float_]]:
+    ) -> dict[str, Any]:
         """
         Thin wrapper around lumapi.fdtd.stackfield which handles the optional rel, min, and max arguments.
 
@@ -102,7 +105,7 @@ class STACKFIELD(Engine):
         :param max: _description_, defaults to None
         :type max: Optional[float], optional
         :return: _description_
-        :rtype: Dict[str, NDArray[np.float_]]
+        :rtype: dict[str, NDArray[np.float_]]
         """
         n = index
         d = thickness
@@ -168,7 +171,7 @@ class LumericalSTACK(Engine):
         frequencies: NDArray[np.float_],
         angles: NDArray[np.float_],
         **kwargs
-    ):
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """
         Simulate the propagation of light through the structure in one dimension using Lumerical's STACK solver.
         Returns the output of STACKRT.simulate() and STACKFIELD.simulate() in a tuple.
@@ -217,8 +220,8 @@ class LumericalMaterial(Material):
     def __init__(
         self,
         session,
-        material_type: str,
-        name=None,
+        material_type: Optional[str] = None,
+        name: Optional[str] = None,
         properties_mapping=_properties_mapping,
         **kwargs
     ):
@@ -241,9 +244,12 @@ class LumericalMaterial(Material):
         """
 
         self.session = session
-        self._name = session.addmaterial(material_type)
-        if name:
-            self.name = name
+        if material_type is not None:
+            self._name = session.addmaterial(material_type)
+            if name is not None:
+                self.name = name
+        elif name is not None:
+            self._name = name
         self._properties_mapping = dict(properties_mapping)
         self.set_property(**kwargs)
         self.sync_backwards()
@@ -279,7 +285,7 @@ class LumericalMaterial(Material):
 
         WARNING: if you use this to set the name, it will not automatically update self._name, which will break all future API calls until self._name is corrected.
 
-        prop: None or str or Dict[str, value]
+        prop: None or str or dict[str, value]
         value: whatever appropriate type the value for prop should be
         """
         if prop and value:
@@ -453,3 +459,119 @@ class LumericalOscillator(LumericalMaterial):
     def lorentz_linewidth(self, new_lorentz_linewidth):
         self.set_property("Lorentz Linewidth", new_lorentz_linewidth)
         self._lorentz_linewidth = self.get_property("Lorentz Linewidth")
+
+
+class LumericalFormatter(DataFormatter):
+    @staticmethod
+    def lumerical_to_xarray(
+        lumerical_dataset,
+        dims,
+        non_dims,
+        variables,
+        vector: Literal[None, 'rectilinear'] = None,
+    ) -> xr.Dataset:
+        dim_coords = {
+            dim: lumerical_dataset[dim].reshape(-1) for dim in dims
+        }  # reshape from nx1 array to n array
+        if vector == "rectilinear":
+            dim_coords["vector"] = np.array(["i", "j", "k"])
+            dims = dims + ["vector"]
+        non_dim_coords = {
+            non_dim_coord: (dim_coords, lumerical_dataset[non_dim_coord].reshape(-1))
+            for non_dim_coord, dim_coords in non_dims.items()
+        }  # reshape from nx1 array to n array
+        coords = dim_coords | non_dim_coords
+        data_vars = {var: (dims, lumerical_dataset[var]) for var in variables}
+
+        dataset = xr.Dataset(data_vars=data_vars, coords=coords)
+
+        return dataset
+    
+    def to_xarray_dataset(self) -> xr.Dataset:
+        raise NotImplementedError
+    
+    def to_xarray_dataarray(
+        self, dim: Optional[Hashable] = None, name: Optional[Hashable] = None
+    ) -> xr.DataArray:
+        """
+        A thin wrapper around xarray.Dataset.to_array().
+
+        :param dim: _description_, defaults to None
+        :type dim: Optional[Hashable], optional
+        :param name: _description_, defaults to None
+        :type name: Optional[Hashable], optional
+        :return: _description_
+        :rtype: _type_
+        """
+        dataset = self.to_xarray_dataset()
+        params = {"dim": dim, "name": name}
+        non_default_params = {k: v for k, v in params.items() if v is not None}
+        dataarray = dataset.to_array(**non_default_params)
+        return dataarray
+
+
+@mutable
+class format_stackrt(LumericalFormatter):
+    lumerical_dataset: dict[str, Any]
+    dims: Iterable[str] = Factory(lambda: ["frequency", "theta"])
+    non_dims: Mapping[str, str] = Factory(lambda: {"lambda": "frequency"})
+    variables: Iterable[str] = Factory(
+        lambda: ["rs", "rp", "ts", "tp", "Rs", "Rp", "Ts", "Tp"]
+    )
+    relabeling: Mapping[str, str] = Factory(lambda: {"lambda": "wavelength"})
+
+    def to_xarray_dataset(self) -> xr.Dataset:
+        dataset = self.lumerical_to_xarray(
+            lumerical_dataset=self.lumerical_dataset,
+            dims=self.dims,
+            non_dims=self.non_dims,
+            variables=self.variables,
+            vector=None,
+        )
+        dataset = dataset.rename(name_dict=self.relabeling)
+        return dataset
+
+
+@mutable
+class format_stackfield(LumericalFormatter):
+    lumerical_dataset: dict[str, Any]
+    dims: Iterable[str] = Factory(lambda: ['x', 'y', 'z', 'frequency', 'theta'])
+    non_dims: Mapping[str, str] = Factory(lambda: {"lambda": "frequency"})
+    variables: Iterable[str] = Factory(
+        lambda: ['Es', 'Hs', 'Ep', 'Hp']
+    )
+    relabeling: Mapping[str, str] = Factory(lambda: {"lambda": "wavelength"})
+    
+    def to_xarray_dataset(self) -> xr.Dataset:
+        dataset = self.lumerical_to_xarray(
+            lumerical_dataset=self.lumerical_dataset,
+            dims=self.dims,
+            non_dims=self.non_dims,
+            variables=self.variables,
+            vector='rectilinear',
+        )
+        dataset = dataset.rename(name_dict=self.relabeling)
+        return dataset
+
+
+@mutable
+class format_STACK:
+    # probably this should be split into two attributes and a factory method defined
+    STACK_output: tuple[dict[str, Any], dict[str, Any]] # TODO: define this type externally and reuse in LumericalSTACK output
+    stackrt_formatter: Callable = field(default=format_stackrt) # TODO: maybe this should be LumericalFormatter type
+    stackfield_formatter: Callable = field(default=format_stackfield) # TODO: maybe this should be LumericalFormatter type
+    format: Literal[None, 'xarray_dataset', 'xarray_dataarray'] = None # TODO: define 'OutputFormats' type
+    
+    def to_xarray_dataset(self,
+                          stackrt_args: Optional[Mapping] = None,
+                          stackfield_args: Optional[Mapping] = None
+                          ) -> tuple[xr.Dataset, xr.Dataset]:
+        if stackrt_args is None:
+            stackrt_args = {}
+        if stackfield_args is None:
+            stackfield_args = {}
+        
+        stackrt_data, stackfield_data = self.STACK_output
+        stackrt_dataset = self.stackrt_formatter(stackrt_data, **stackrt_args)
+        stackfield_dataset = self.stackfield_formatter(stackfield_data, **stackfield_args)
+        return stackrt_dataset, stackfield_dataset
