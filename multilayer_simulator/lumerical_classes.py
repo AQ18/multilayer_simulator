@@ -9,6 +9,10 @@ import xarray as xr
 from multilayer_simulator.engine import Engine
 from multilayer_simulator.helpers.formatters import DataFormatter
 from multilayer_simulator.helpers.helpers import filter_mapping, relabel_mapping
+from multilayer_simulator.helpers.xarray import (
+    add_absorption_to_xarray_dataset,
+    add_vector_norms_to_xarray_dataset,
+)
 from multilayer_simulator.structure import Structure
 from multilayer_simulator.material import Material
 
@@ -524,6 +528,7 @@ class format_stackrt(LumericalFormatter):
         lambda: ["rs", "rp", "ts", "tp", "Rs", "Rp", "Ts", "Tp"]
     )
     relabeling: Mapping[str, str] = Factory(lambda: {"lambda": "wavelength"})
+    add_absorption: bool = True
 
     def to_xarray_dataset(self) -> xr.Dataset:
         dataset = self.lumerical_to_xarray(
@@ -534,6 +539,9 @@ class format_stackrt(LumericalFormatter):
             vector=None,
         )
         dataset = dataset.rename(name_dict=self.relabeling)
+        if self.add_absorption:
+            add_absorption_to_xarray_dataset(dataset, "Rs", "Ts", "As")
+            add_absorption_to_xarray_dataset(dataset, "Rp", "Tp", "Ap")
         return dataset
 
 
@@ -544,8 +552,9 @@ class format_stackfield(LumericalFormatter):
     non_dims: Mapping[str, str] = Factory(lambda: {"lambda": "frequency"})
     variables: Iterable[str] = Factory(lambda: ["Es", "Hs", "Ep", "Hp"])
     relabeling: Mapping[str, str] = Factory(lambda: {"lambda": "wavelength"})
+    add_norms: bool = True
 
-    def to_xarray_dataset(self) -> xr.Dataset:
+    def to_xarray_dataset(self, add_norms=True) -> xr.Dataset:
         dataset = self.lumerical_to_xarray(
             lumerical_dataset=self.lumerical_dataset,
             dims=self.dims,
@@ -554,6 +563,8 @@ class format_stackfield(LumericalFormatter):
             vector="rectilinear",
         )
         dataset = dataset.rename(name_dict=self.relabeling)
+        if self.add_norms:
+            add_vector_norms_to_xarray_dataset(dataset, "vector")
         return dataset
 
 
