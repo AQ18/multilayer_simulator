@@ -8,7 +8,9 @@ This project was first conceived to build a Python interface to conduct simulati
 A design goal is to introduce sufficient flexibility so that other optical physics solvers can be swapped in as backends.
 Specific targets to be kept in mind include the `PyLlama <https://github.com/VignoliniLab/PyLlama>`_ and `py_matrix <https://github.com/gevero/py_matrix>`_ projects.
 
-For a showcase of the features, please see the `example notebook <example.ipynb>`.
+For a showcase of the features, please see the `example notebook`_.
+
+.. _`example notebook`: example.ipynb
 
 Features
 --------
