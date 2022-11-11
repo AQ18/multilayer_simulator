@@ -41,7 +41,7 @@ If using Lumerical STACK or FDTD as a backend
 
 For reasons unknown, Lumerical's Python API is not presented as a package, and so pip install doesn't work. Instead, add the directory to the system path, either permanently via system settings, or specifically for this environment using
 ::
-    conda develop "C:\Program Files\Lumerical\v212\api\python" -n multilayer_simulator
+    conda develop "C:\Program Files\Lumerical\v222\api\python" -n multilayer_simulator
 
 (Replace the path with whatever is appropriate for your installation, of course. The version number will probably not be the same.)
 You can check that this has been successful by running the very simple ``test_lumapi_installation.py`` script. Look at the comments in the script for advice on what to do if it breaks.
