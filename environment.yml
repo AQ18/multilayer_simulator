@@ -1,11 +1,12 @@
 name: multilayer_simulator
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
-  - python=3.9
+  - python=3.10.0 # Upgrade to 3.11 when Holoviews is compatible
 # Essential
   - numpy
+  - scipy
   - attrs>=21.3.0
 # Interactive
   - jupyter
