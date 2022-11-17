@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Literal
+from typing import Callable, Iterable, Literal
 import numpy as np
 from numpy.typing import NDArray
 from attrs import mutable, frozen, field, setters
+import copy
 
-from multilayer_simulator.material import Material
+from multilayer_simulator.material import Material, ConstantIndex
 
 
 class Structure(ABC):
@@ -44,7 +45,21 @@ class Layer(Structure):
         return 0
 
     @classmethod
-    def from_material(cls, material: Material, thickness: float = _thickness_default()):
+    def from_material(
+        cls,
+        material: Material = ConstantIndex(1),
+        thickness: float = _thickness_default(),
+    ) -> 'Layer':
+        """
+        Create Layer from Material and thickness.
+
+        :param material: Material that the Layer is composed of, defaults to ConstantIndex(1) (i.e. vacuum)
+        :type material: Material, optional
+        :param thickness: Thickness of the Layer, defaults to _thickness_default()
+        :type thickness: float, optional
+        :return: Instance of Layer
+        :rtype: Layer
+        """
         index = material.index
         return cls(index, thickness)
 
