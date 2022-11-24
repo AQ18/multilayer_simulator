@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Iterable, Literal
 import numpy as np
 from numpy.typing import NDArray
-from attrs import mutable, frozen, field, setters
+from attrs import mutable, frozen, field, validators, setters
 import copy
 
 from multilayer_simulator.material import Material, ConstantIndex
@@ -33,9 +33,13 @@ class Layer(Structure):
 
     _index: Callable[
         [NDArray[np.float_], Literal[1, 2, 3], NDArray[np.float_]], NDArray[np.float_]
-    ]  # TODO: Type this as callback protocol instead
+    ] = ConstantIndex(
+        1
+    ).index  # TODO: Type this as callback protocol instead
     thickness: NDArray[np.float_] = field(
-        converter=np.atleast_1d, on_setattr=setters.convert
+        converter=np.atleast_1d,
+        validator=validators.ge(0),
+        on_setattr=setters.pipe(setters.convert, setters.validate),
     )
 
     @thickness.default
@@ -49,7 +53,7 @@ class Layer(Structure):
         cls,
         material: Material = ConstantIndex(1),
         thickness: float = _thickness_default(),
-    ) -> 'Layer':
+    ) -> "Layer":
         """
         Create Layer from Material and thickness.
 
@@ -100,7 +104,7 @@ class Multilayer(Structure):
         exit_layer: Layer = Layer.from_material(),
         num_periods: int = 1,
         copy_layers: bool = True,
-    ) -> 'Multilayer':
+    ) -> "Multilayer":
         """
         Return a periodic Multilayer containing some number of repetitions of a unit cell.
         The Multilayer is not guaranteed to be periodic after instantiation - internal
