@@ -27,3 +27,5 @@ dependencies:
   - pip
   - pip:
     - -e .
+    - pytest-cases
+    - pytest-repeat
