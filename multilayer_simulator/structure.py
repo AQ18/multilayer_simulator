@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Iterable, Literal
 import numpy as np
+import dis
 from numpy.typing import NDArray
 from attrs import mutable, frozen, field, validators, setters
 import copy
@@ -33,9 +34,9 @@ class Layer(Structure):
 
     _index: Callable[
         [NDArray[np.float_], Literal[1, 2, 3], NDArray[np.float_]], NDArray[np.float_]
-    ] = ConstantIndex(
-        1
-    ).index  # TODO: Type this as callback protocol instead
+    ] = field(
+        default=ConstantIndex(1).index, eq=dis.dis
+    )  # TODO: Type this as callback protocol instead
     thickness: NDArray[np.float_] = field(
         converter=np.atleast_1d,
         validator=validators.ge(0),
