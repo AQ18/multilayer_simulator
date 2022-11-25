@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Iterable, Literal
+from typing import Callable, Iterable, Literal, Optional
 import numpy as np
 import dis
 from numpy.typing import NDArray
@@ -32,6 +32,8 @@ class Layer(Structure):
     Represent a single layer.
     """
 
+    # TODO: Add optional material property to give a handle to copied layer materials
+
     _index: Callable[
         [NDArray[np.float_], Literal[1, 2, 3], NDArray[np.float_]], NDArray[np.float_]
     ] = field(
@@ -42,6 +44,7 @@ class Layer(Structure):
         validator=validators.ge(0),
         on_setattr=setters.pipe(setters.convert, setters.validate),
     )
+    material: Optional[Material] = field(default=None, eq=False)
 
     @thickness.default
     def _thickness_default(
@@ -66,7 +69,7 @@ class Layer(Structure):
         :rtype: Layer
         """
         index = material.index
-        return cls(index, thickness)
+        return cls(index, thickness, material=material)
 
     def index(
         self, frequencies: NDArray[np.float_], component: Literal[1, 2, 3] = 1
