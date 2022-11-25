@@ -132,13 +132,13 @@ class Multilayer(Structure):
         layers = []
         if copy_layers:
             layers.append(copy.deepcopy(incident_layer))
-            for _ in num_periods:
+            for _ in range(num_periods):
                 for layer in unit_cell:
                     layers.append(copy.deepcopy(layer))
             layers.append(copy.deepcopy(exit_layer))
         else:
             layers.append(incident_layer)
-            for _ in num_periods:
+            for _ in range(num_periods):
                 for layer in unit_cell:
                     layers.append(layer)
             layers.append(exit_layer)
