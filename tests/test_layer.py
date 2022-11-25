@@ -2,6 +2,7 @@ import pytest
 from pytest_cases import fixture, parametrize, parametrize_with_cases
 import random
 import dis
+import copy
 from multilayer_simulator.structure import Layer
 from multilayer_simulator.material import ConstantIndex
 
@@ -86,3 +87,16 @@ class TestLayer:
         layer = Layer.from_material(constant_index_material)
         constant_index_material._index = new_index
         assert layer.index(frequency) == new_index
+
+    @parametrize("frequency, new_index", [(1, 2)])
+    def test_copied_material_modification(
+        self, constant_index_material, frequency, new_index
+    ):
+        """Copied layer.material property should give a handle on layer.index()."""
+        layer = copy.deepcopy(Layer.from_material(constant_index_material))
+        assert layer.material == constant_index_material
+        old_index = constant_index_material._index
+        constant_index_material._index = new_index
+        assert layer.index(frequency) == old_index == 1
+        layer.material._index = new_index
+        assert layer.index(frequency) == new_index == 2
