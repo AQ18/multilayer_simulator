@@ -146,3 +146,9 @@ class Multilayer(Structure):
                     layers.append(layer)
             layers.append(exit_layer)
         return cls(layers)
+
+    @property
+    def stack_layers(self):
+        return self.layers[1:-1]
+    
+    

@@ -112,8 +112,18 @@ class TestMultilayer:
         assert (
             modified_layer.thickness == multilayer.layers[1 + len(layers)].thickness + 1
         )
-        material_1._index += 1 # This should affect old_layer but not multilayer.layers
+        material_1._index += 1  # This should affect old_layer but not multilayer.layers
         assert modified_layer.index(1) == old_layer.index(1) - 1
         modified_layer.material._index += 1
         assert modified_layer.index(1) == old_layer.index(1)
-        assert material_1 == modified_layer.material
+
+    @parametrize(num_periods=[3, 10, 100])
+    def test_stack_layers(self, vacuum_layer, layers, num_periods):
+        multilayer = Multilayer.from_unit_cell(
+            layers,
+            incident_layer=vacuum_layer,
+            exit_layer=vacuum_layer,
+            num_periods=num_periods,
+            copy_layers=True,
+        )
+        assert multilayer.stack_layers == layers * num_periods
