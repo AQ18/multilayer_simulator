@@ -98,5 +98,6 @@ class TestLayer:
         old_index = constant_index_material._index
         constant_index_material._index = new_index
         assert layer.index(frequency) == old_index == 1
+        # This hard-coded number probably doesn't belong in this test
         layer.material._index = new_index
-        assert layer.index(frequency) == new_index == 2
+        assert layer.index(frequency) == new_index

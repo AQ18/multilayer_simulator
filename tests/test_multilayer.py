@@ -114,3 +114,6 @@ class TestMultilayer:
         )
         material_1._index += 1 # This should affect old_layer but not multilayer.layers
         assert modified_layer.index(1) == old_layer.index(1) - 1
+        modified_layer.material._index += 1
+        assert modified_layer.index(1) == old_layer.index(1)
+        assert material_1 == modified_layer.material
