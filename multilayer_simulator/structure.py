@@ -32,8 +32,6 @@ class Layer(Structure):
     Represent a single layer.
     """
 
-    # TODO: Add optional material property to give a handle to copied layer materials
-
     _index: Callable[
         [NDArray[np.float_], Literal[1, 2, 3], NDArray[np.float_]], NDArray[np.float_]
     ] = field(
@@ -84,6 +82,7 @@ class Multilayer(Structure):
     """
 
     layers: list[Layer]
+    unit_cell: Optional[list[Layer]] = field(default=None, eq=False)
 
     def index(
         self, frequencies: NDArray[np.float_], component: Literal[1, 2, 3] = 1
@@ -100,8 +99,19 @@ class Multilayer(Structure):
         ).squeeze()  # squeeze from nx1 to n array
         return thickness_array
 
+    @property
+    def stack_layers(self):
+        """
+        Just a convenient shorthand for layers[1:-1], i.e. excluding
+        the incident and exit layers.
+
+        :return: _description_
+        :rtype: _type_
+        """
+        return self.layers[1:-1]
+
     @classmethod
-    def from_unit_cell(
+    def from_given_unit_cell(
         cls,
         unit_cell: Iterable[Layer],
         incident_layer: Layer = Layer.from_material(),
@@ -145,10 +155,41 @@ class Multilayer(Structure):
                 for layer in unit_cell:
                     layers.append(layer)
             layers.append(exit_layer)
-        return cls(layers)
+        return cls(layers, unit_cell=unit_cell)
 
-    @property
-    def stack_layers(self):
-        return self.layers[1:-1]
-    
-    
+    def from_own_unit_cell(
+        self,
+        unit_cell: Optional[Iterable[Layer]] = None,
+        incident_layer: Layer = Layer.from_material(),
+        exit_layer: Layer = Layer.from_material(),
+        num_periods: int = 1,
+        copy_layers: bool = True,
+    ) -> "Multilayer":
+        """
+        Return a new periodic Multilayer containing some number of repetitions of a unit cell.
+        If unit_cell is None (default), will use the Multilayer's own unit_cell property if it
+        is not None (default), else stack_layers (the entire stack excluding incident/exit layers).
+        See the classmethod from_given_unit_cell() for more details.
+
+        :param unit_cell: The layers that will be repeated to make up the multilayer, defaults to None
+        :type unit_cell: Optional[Iterable[Layer]], optional
+        :param incident_layer: Layer defining the incident medium, defaults to Layer.from_material()
+        :type incident_layer: Layer, optional
+        :param exit_layer: Layer defining the exit medium, defaults to Layer.from_material()
+        :type exit_layer: Layer, optional
+        :param num_periods: Number of repetitions of the unit cell, defaults to 1
+        :type num_periods: int, optional
+        :param copy_layers: Whether to deepcopy every Layer, defaults to True
+        :type copy_layers: bool, optional
+        :return: Instance of Multilayer
+        :rtype: Multilayer
+        """
+        if unit_cell is None:
+            unit_cell = self.stack_layers if self.unit_cell is None else self.unit_cell
+        return self.from_given_unit_cell(
+            unit_cell=unit_cell,
+            incident_layer=incident_layer,
+            exit_layer=exit_layer,
+            num_periods=num_periods,
+            copy_layers=copy_layers,
+        )
