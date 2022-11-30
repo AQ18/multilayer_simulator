@@ -1,13 +1,14 @@
 import numpy as np
+from scipy import constants
 
 # constants
-epsilon_0: float = 8.854e-12  # electric permittivity of free space
-e: float = 1.6022e-19  # electron charge
-m_0: float = 9.109e-31  # electron mass
+epsilon_0: float = constants.epsilon_0  # electric permittivity of free space
+e: float = constants.e  # electron charge
+m_0: float = constants.m_e  # electron mass
 
 
 def convert_f_to_omega(f):
-    return 2*np.pi*f
+    return 2 * np.pi * f
 
 
 def plasma_frequency_squared(N, epsilon_0=epsilon_0, e=e, m_0=m_0):

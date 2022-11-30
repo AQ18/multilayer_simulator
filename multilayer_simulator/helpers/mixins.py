@@ -2,11 +2,12 @@ from functools import cached_property
 from typing import ClassVar
 import numpy as np
 from numpy.typing import ArrayLike
+from scipy import constants
 from attrs import mutable, field, converters, setters
 
 
 # constants
-c: float = 2.99792458e8  # speed of light (m/s)
+c: float = constants.c  # speed of light (m/s)
 
 # SpectrumMixin
 def convert_wavelength_and_frequency(value, c=c):
