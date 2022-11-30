@@ -29,4 +29,5 @@ class ConstantIndex(Material):
         frequencies: Optional[NDArray[np.float_]] = None,
         component: Literal[1, 2, 3] = 1,
     ) -> NDArray[np.float_]:
-        return self._index
+        frequencies = np.atleast_1d(frequencies)
+        return np.full(shape=frequencies.shape, fill_value=self._index)

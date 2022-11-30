@@ -55,8 +55,12 @@ class TestMultilayer:
     def test_index_and_thickness(self, layers, frequencies):
         layer_1, layer_2 = layers
         multilayer = Multilayer(layers)
-        assert multilayer.index(frequencies)[0] == layer_1.index(frequencies)
-        assert multilayer.index(frequencies)[1] == layer_2.index(frequencies)
+        assert np.array_equal(
+            multilayer.index(frequencies)[0], layer_1.index(frequencies)
+        )
+        assert np.array_equal(
+            multilayer.index(frequencies)[1], layer_2.index(frequencies)
+        )
         assert multilayer.thickness[0] == layer_1.thickness
         assert multilayer.thickness[1] == layer_2.thickness
 
