@@ -2,6 +2,7 @@ from typing import Literal, Optional
 from attrs import mutable
 import numpy as np
 from numpy.typing import NDArray
+from multilayer_simulator.helpers.lorentz_oscillator import n, k, convert_f_to_omega
 
 
 class Material:
@@ -31,3 +32,36 @@ class ConstantIndex(Material):
     ) -> NDArray[np.float_]:
         frequencies = np.atleast_1d(frequencies)
         return np.full(shape=frequencies.shape, fill_value=self._index)
+
+
+@mutable
+class LorentzOscillator(Material):
+    omega_0: float  # oscillator resonance
+    gamma: float  # damping rate
+    N: float  # density of oscillators
+    chi: float  # electric susceptibility
+
+    def index(
+        self,
+        frequencies: Optional[NDArray[np.float_]] = None,
+        component: Literal[1, 2, 3] = 1,
+    ) -> NDArray[np.float_]:
+        omegas = convert_f_to_omega(f=frequencies)
+        _index = (
+            n(
+                omega=omegas,
+                omega_0=self.omega_0,
+                gamma=self.gamma,
+                N=self.N,
+                chi=self.chi,
+            )
+            + k(
+                omega=omegas,
+                omega_0=self.omega_0,
+                gamma=self.gamma,
+                N=self.N,
+                chi=self.chi,
+            )
+            * 1j
+        )
+        return np.atleast_1d(_index)
