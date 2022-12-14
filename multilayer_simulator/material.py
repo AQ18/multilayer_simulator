@@ -3,9 +3,10 @@ from attrs import mutable
 import numpy as np
 from numpy.typing import NDArray
 from multilayer_simulator.helpers.lorentz_oscillator import n, k, convert_f_to_omega
+from multilayer_simulator.helpers.mixins import NamedMixin
 
 
-class Material:
+class Material(NamedMixin):
     """
     Represent a material.
     """

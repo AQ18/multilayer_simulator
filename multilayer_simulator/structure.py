@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Iterable, Literal, Optional
+from typing import Callable, Iterable, Literal, Optional, Union
 import numpy as np
 import dis
 from numpy.typing import NDArray
 from attrs import mutable, frozen, field, validators, setters
 import copy
 
+from multilayer_simulator.helpers.mixins import NamedMixin
 from multilayer_simulator.material import Material, ConstantIndex
 
 
-class Structure(ABC):
+class Structure(ABC, NamedMixin):
     """
     Interface for a class representing a structure to be optically modeled in 1D.
     """
@@ -35,7 +36,7 @@ class Layer(Structure):
     _index: Callable[
         [NDArray[np.float_], Literal[1, 2, 3], NDArray[np.float_]], NDArray[np.float_]
     ] = field(
-        default=ConstantIndex(1).index, eq=dis.dis
+        default=ConstantIndex(1).index, eq=dis.dis, repr=False
     )  # TODO: Type this as callback protocol instead
     thickness: NDArray[np.float_] = field(
         converter=np.atleast_1d,
@@ -55,19 +56,31 @@ class Layer(Structure):
         cls,
         material: Material = ConstantIndex(1),
         thickness: float = _thickness_default(),
+        name: Optional[Union[str, Callable]] = None,
     ) -> "Layer":
         """
         Create Layer from Material and thickness.
 
-        :param material: Material that the Layer is composed of, defaults to ConstantIndex(1) (i.e. vacuum)
+        :param material: Material that the Layer is composed of, defaults to ConstantIndex(1) (i.e. vacuum).
         :type material: Material, optional
-        :param thickness: Thickness of the Layer, defaults to _thickness_default()
+        :param thickness: Thickness of the Layer, defaults to _thickness_default().
         :type thickness: float, optional
-        :return: Instance of Layer
+        :param name: Name of the Layer, defaults to None.
+            If None, use material.name.
+            If callable, use name(material.name). Must accept a single argument.
+            Otherwise (e.g. if string), use name itself.
+        :type name: Optional[Union[str, Callable]], optional
+        :return: Instance of Layer.
         :rtype: Layer
         """
         index = material.index
-        return cls(index, thickness, material=material)
+        if name is None:
+            name = material.name
+        elif callable(name):
+            name = name(material.name)
+        else:
+            name = name
+        return cls(index, thickness, material=material, name=name)
 
     def index(
         self, frequencies: NDArray[np.float_], component: Literal[1, 2, 3] = 1
@@ -82,7 +95,7 @@ class Multilayer(Structure):
     """
 
     layers: list[Layer]
-    unit_cell: Optional[list[Layer]] = field(default=None, eq=False)
+    unit_cell: Optional[list[Layer]] = field(default=None, eq=False, repr=False)
 
     def index(
         self, frequencies: NDArray[np.float_], component: Literal[1, 2, 3] = 1
@@ -160,7 +173,7 @@ class Multilayer(Structure):
     def from_own_unit_cell(
         self,
         unit_cell: Optional[Iterable[Layer]] = None,
-        incident_layer: Layer = Layer.from_material(),
+        incident_layer: Layer = Layer.from_material(), # TODO default should be to use existing incident and exit layers
         exit_layer: Layer = Layer.from_material(),
         num_periods: int = 1,
         copy_layers: bool = True,

@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import ClassVar
+from typing import ClassVar, Optional
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy import constants
@@ -82,3 +82,8 @@ class SpectrumMixinV0_2:
             return convert_wavelength_and_frequency(self.frequencies, self.c)
         except TypeError:
             return None
+
+
+@mutable
+class NamedMixin:
+    name: Optional[str] = field(default=None, kw_only=True)
