@@ -441,13 +441,13 @@ class LumericalOscillator(LumericalMaterial):
         self._permittivity = self.get_property("Permittivity")
 
     @property
-    def lorentz_permittivty(self):
-        return self._lorentz_permittivty
+    def lorentz_permittivity(self):
+        return self._lorentz_permittivity
 
-    @lorentz_permittivty.setter
-    def lorentz_permittivty(self, new_lorentz_permittivty):
-        self.set_property("Lorentz Permittivity", new_lorentz_permittivty)
-        self._lorentz_permittivty = self.get_property("Lorentz Permittivity")
+    @lorentz_permittivity.setter
+    def lorentz_permittivity(self, new_lorentz_permittivity):
+        self.set_property("Lorentz Permittivity", new_lorentz_permittivity)
+        self._lorentz_permittivity = self.get_property("Lorentz Permittivity")
 
     @property
     def lorentz_resonance(self):
