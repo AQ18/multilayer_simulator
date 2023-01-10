@@ -10,6 +10,7 @@ import xarray as xr
 from multilayer_simulator.engine import Engine
 from multilayer_simulator.helpers.formatters import DataFormatter
 from multilayer_simulator.helpers.helpers import filter_mapping, relabel_mapping
+from multilayer_simulator.helpers.lorentz_oscillator import plasma_frequency_squared
 from multilayer_simulator.helpers.xarray import (
     add_absorption_to_xarray_dataset,
     add_vector_norms_to_xarray_dataset,
@@ -467,6 +468,66 @@ class LumericalOscillator(LumericalMaterial):
     def lorentz_linewidth(self, new_lorentz_linewidth):
         self.set_property("Lorentz Linewidth", new_lorentz_linewidth)
         self._lorentz_linewidth = self.get_property("Lorentz Linewidth")
+
+    @staticmethod
+    def translate_parameters_from_LorentzOscillator(lorentz_oscillator):
+        """
+        Translate the set of parameters used in material.LorentzOscillator into the
+        parameters that define an equivalent LumericalOscillator.
+
+        :param lorentz_oscillator: object with LorentzOscillator-like attributes
+        :type lorentz_oscillator: material.LorentzOscillator or similar
+        :return: equivalent parameters
+        :rtype: dict
+        """
+        omega_0 = lorentz_oscillator.omega_0
+        gamma = lorentz_oscillator.gamma
+        N = lorentz_oscillator.N
+        chi = lorentz_oscillator.chi
+
+        lumerical_properties = {
+            "permittivity": 1 + chi,
+            "lorentz_permittivity": plasma_frequency_squared(N=N) / omega_0**2,
+            "lorentz_resonance": omega_0,
+            "lorentz_linewidth": gamma / 2,
+        }
+
+        return lumerical_properties
+
+    @classmethod
+    def from_LorentzOscillator(
+        cls,
+        session,
+        lorentz_oscillator,
+        name=None,
+        properties_mapping=_properties_mapping,
+        **kwargs
+    ):
+        """
+        Build or parameterize an existing Lorentz Oscillator type material in the Lumerical
+        materials database according to the parameters of a material.LorentzOscillator type.
+
+        :param session: an instance of a Lumerical product session
+        :type session: lumapi.FDTD
+        :param lorentz_oscillator: object with LorentzOscillator-like attributes
+        :type lorentz_oscillator: material.LorentzOscillator
+        :param name: name of material in the Lumerical materials database, defaults to None
+        :type name: str, optional
+        :param properties_mapping: mapping of keyword args to strings, defaults to _properties_mapping
+        :type properties_mapping: Dict[str, str], optional
+        :return: new LumericalOscillator instance
+        :rtype: LumericalOscillator
+        """
+        lumerical_properties = kwargs | cls.translate_parameters_from_LorentzOscillator(
+            lorentz_oscillator
+        )
+
+        return cls(
+            session=session,
+            name=name,
+            properties_mapping=properties_mapping,
+            **lumerical_properties
+        )
 
 
 @mutable
