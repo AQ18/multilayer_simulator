@@ -1,5 +1,6 @@
 from typing import Any, Callable, ClassVar, Hashable, Literal, Mapping, Optional
 from collections.abc import Iterable
+import attrs
 import numpy as np
 from numpy.typing import NDArray
 from attrs import mutable, frozen, field, Factory
@@ -468,7 +469,24 @@ class LumericalOscillator(LumericalMaterial):
         self._lorentz_linewidth = self.get_property("Lorentz Linewidth")
 
 
+@mutable
 class LumericalFormatter(DataFormatter):
+    lumerical_dataset: Optional[dict[str, Any]] = None
+
+    def format(self, lumerical_dataset, **kwargs):
+        new_formatter = attrs.evolve(
+            self, lumerical_dataset=lumerical_dataset, **kwargs
+        )
+        match new_formatter.output_format:
+            case None:
+                return new_formatter.lumerical_dataset
+            case "xarray_dataset":
+                return new_formatter.to_xarray_dataset()
+            case "xarray_dataarray":
+                return new_formatter.to_xarray_dataarray()
+            case _:
+                raise AttributeError("output_format not recognised")
+
     @staticmethod
     def lumerical_to_xarray(
         lumerical_dataset,
@@ -521,7 +539,6 @@ class LumericalFormatter(DataFormatter):
 
 @mutable
 class format_stackrt(LumericalFormatter):
-    lumerical_dataset: dict[str, Any]
     dims: Iterable[str] = Factory(lambda: ["frequency", "theta"])
     non_dims: Mapping[str, str] = Factory(lambda: {"lambda": "frequency"})
     variables: Iterable[str] = Factory(
@@ -547,7 +564,6 @@ class format_stackrt(LumericalFormatter):
 
 @mutable
 class format_stackfield(LumericalFormatter):
-    lumerical_dataset: dict[str, Any]
     dims: Iterable[str] = Factory(lambda: ["x", "y", "z", "frequency", "theta"])
     non_dims: Mapping[str, str] = Factory(lambda: {"lambda": "frequency"})
     variables: Iterable[str] = Factory(lambda: ["Es", "Hs", "Ep", "Hp"])
@@ -570,11 +586,10 @@ class format_stackfield(LumericalFormatter):
 
 @mutable
 class format_STACK(DataFormatter):
-    stackrt_dataset: dict[str, Any]
-    stackfield_dataset: dict[str, Any]
+    stackrt_dataset: Optional[dict[str, Any]] = None
+    stackfield_dataset: Optional[dict[str, Any]] = None
     stackrt_formatter: Callable = field()
     stackfield_formatter: Callable = field()
-    format: DataFormatter.OutputFormats = None
 
     @stackrt_formatter.default
     def _stackrt_formatter_default(self=None):
@@ -584,10 +599,12 @@ class format_STACK(DataFormatter):
     def _stackfield_formatter_default(self=None):
         return format_stackfield
 
-    def __attrs_post_init__(self):  #
-        if self.format == "xarray_dataset":
+    def __attrs_post_init__(
+        self,
+    ):  # This defiitely does not work because __init__ should not return anything - implement .format() protocol instead
+        if self.output_format == "xarray_dataset":
             return self.to_xarray_dataset()
-        if self.format == "xarray_dataarray":
+        if self.output_format == "xarray_dataarray":
             return self.to_xarray_dataarray()
 
     @classmethod
@@ -596,7 +613,7 @@ class format_STACK(DataFormatter):
         STACK_output: STACKOutput,
         stackrt_formatter: Callable = _stackrt_formatter_default(),
         stackfield_formatter: Callable = _stackfield_formatter_default(),
-        format: DataFormatter.OutputFormats = None,
+        output_format: DataFormatter.OutputFormats = None,
     ) -> "format_STACK":
         stackrt_dataset = STACK_output[0]
         stackfield_dataset = STACK_output[1]
@@ -605,7 +622,7 @@ class format_STACK(DataFormatter):
             stackfield_dataset=stackfield_dataset,
             stackrt_formatter=stackrt_formatter,
             stackfield_formatter=stackfield_formatter,
-            format=format,
+            output_format=output_format,
         )
 
     def to_xarray_dataset(
