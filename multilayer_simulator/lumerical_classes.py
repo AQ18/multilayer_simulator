@@ -57,7 +57,7 @@ class STACKRT(Engine):
         structure: Structure,
         frequencies: NDArray[np.float64],
         angles: NDArray[np.float64],
-        **kwargs
+        **kwargs,
     ):
         """
         Simulate the propagation of light through the structure in one dimension using Lumerical's STACK solver.
@@ -140,7 +140,7 @@ class STACKFIELD(Engine):
         structure: Structure,
         frequencies: NDArray[np.float64],
         angles: NDArray[np.float64],
-        **kwargs
+        **kwargs,
     ):
         """
         Simulate the propagation of light through the structure in one dimension using Lumerical's STACK solver.
@@ -179,7 +179,7 @@ class LumericalSTACK(Engine):
         structure: Structure,
         frequencies: NDArray[np.float_],
         angles: NDArray[np.float_],
-        **kwargs
+        **kwargs,
     ) -> STACKOutput:
         """
         Simulate the propagation of light through the structure in one dimension using Lumerical's STACK solver.
@@ -232,7 +232,7 @@ class LumericalMaterial(Material):
         material_type: Optional[str] = None,
         name: Optional[str] = None,
         properties_mapping=_properties_mapping,
-        **kwargs
+        **kwargs,
     ):
         """
         A class representing a new material added to the Lumerical materials database for a session.
@@ -253,12 +253,25 @@ class LumericalMaterial(Material):
         """
 
         self.session = session
-        if material_type is not None:
-            self._name = session.addmaterial(material_type)
-            if name is not None:
-                self.name = name
-        elif name is not None:
-            self._name = name
+
+        match name, material_type:
+            case None, None:
+                raise AttributeError(
+                    "At least one of name or material_type must be supplied"
+                )
+            case name, _ if name is not None and self._check_name_in_database(
+                session=session, name=name
+            ):
+                self._name = name
+            case name, material_type if material_type is not None:
+                self._name = session.addmaterial(material_type)
+                if name is not None:
+                    self.name = name
+            case _:
+                raise AttributeError(
+                    "No material_type supplied and name was not found in database"
+                )
+
         self._properties_mapping = dict(properties_mapping)
         self.set_property(**kwargs)
         self.sync_backwards()
@@ -271,6 +284,12 @@ class LumericalMaterial(Material):
     #                'type': 'type'
     #               }
     #     return mapping
+
+    @staticmethod
+    def _check_name_in_database(session, name):
+        msg = session.getmaterial(name)
+        in_database = not (msg == f"The material, {name}, is not available.")
+        return in_database
 
     def get_property(self, prop=None):
         """
@@ -412,7 +431,7 @@ class LumericalOscillator(LumericalMaterial):
             material_type="Lorentz",
             name=name,
             properties_mapping=properties_mapping,
-            **kwargs
+            **kwargs,
         )
 
     def sync_backwards(self):
@@ -501,7 +520,7 @@ class LumericalOscillator(LumericalMaterial):
         lorentz_oscillator,
         name=None,
         properties_mapping=_properties_mapping,
-        **kwargs
+        **kwargs,
     ):
         """
         Build or parameterize an existing Lorentz Oscillator type material in the Lumerical
@@ -526,7 +545,7 @@ class LumericalOscillator(LumericalMaterial):
             session=session,
             name=name,
             properties_mapping=properties_mapping,
-            **lumerical_properties
+            **lumerical_properties,
         )
 
 
