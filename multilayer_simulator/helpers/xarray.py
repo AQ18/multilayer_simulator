@@ -26,8 +26,7 @@ def add_absorption_to_xarray_dataset(dataset: xr.Dataset, reflectance_key: Union
     """
     Modify a dataset by calculating the absorptance from the DataArrays indicated by the reflectance and transmittance keys, and
     adding it to the dataset under the absorptance key. Returns the modified dataset as a copy.
-    Fails silently if either the reflectance or transmittance keys are missing.
-    TODO: Raise warning instead.
+    TODO: Raise warning if either the reflectance or transmittance keys are missing.
 
     :param dataset: An xarray dataset
     :type dataset: xr.Dataset
