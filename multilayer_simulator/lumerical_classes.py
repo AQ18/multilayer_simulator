@@ -235,8 +235,8 @@ class LumericalMaterial(Material):
         **kwargs,
     ):
         """
-        A class representing a new material added to the Lumerical materials database for a session.
-        Probably can be trivially extended to include existing materials too.
+        A class representing a material in the Lumerical materials database.
+        If the supplied name exists, then represent that material. Otherwise, create a new one.
         Not tested for any engine but FDTD because I don't use them.
 
         Property getters use private member variables rather than API calls for a very minor performance advantage. Check that there is agreement using check_properties() method.
@@ -637,8 +637,7 @@ class format_stackrt(LumericalFormatter):
         )
         dataset = dataset.rename(name_dict=self.relabeling)
         if self.add_absorption:
-            add_absorption_to_xarray_dataset(dataset, "Rs", "Ts", "As")
-            add_absorption_to_xarray_dataset(dataset, "Rp", "Tp", "Ap")
+            dataset = add_absorption_to_xarray_dataset(dataset, ("Rs", "Rp"), ("Ts", "Tp"), ("As", "Ap"))
         return dataset
 
 
