@@ -49,7 +49,7 @@ def add_absorption_to_xarray_dataset(
     a_keys = np.atleast_1d(absorptance_key)
 
     variables = {
-        a: lambda x: 1 - x[r] - x[t] for r, t, a in zip(r_keys, t_keys, a_keys)
+        a: lambda x, r=r, t=t: 1 - x[r] - x[t] for r, t, a in zip(r_keys, t_keys, a_keys)
     }
 
     modified = dataset.assign(variables=variables)
@@ -84,7 +84,7 @@ def add_unpolarised_to_xarray_dataset(
     u_keys = np.atleast_1d(unpolarised_key)
 
     variables = {
-        u: lambda x: (x[s] + s[p]) / 2 for s, p, u in zip(s_keys, p_keys, u_keys)
+        u: lambda x, s=s, p=p: (x[s] + x[p]) / 2 for s, p, u in zip(s_keys, p_keys, u_keys)
     }
 
     modified = dataset.assign(variables=variables)
