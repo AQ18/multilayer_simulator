@@ -18,9 +18,11 @@ dependencies:
 # Data formats
   # - pandas
   - xarray
+  - dask
 # Plotting
   - matplotlib
   - holoviews
+  - hvplot
 # Testing
   - pytest
   - pip
