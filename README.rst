@@ -29,11 +29,11 @@ Download multilayer-simulator repository e.g. from Github with
 
 From Anaconda Prompt working in the multilayer-simulator repository, run this to create the conda environment:
 ::
-    conda env create --file environment.yml --name multilayer-simulator
+    conda env create --file environment.yml
 
 To start using the notebooks and edit the code, run
 ::
-    conda activate multilayer-simulator
+    conda activate multilayer_simulator
     jupyter lab
 
 If using Lumerical STACK or FDTD as a backend
